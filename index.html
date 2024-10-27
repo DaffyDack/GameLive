@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru">
+ 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Игра Жизнь</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+ 
+        canvas {
+            border: 1px solid #000;
+        }
+ 
+        button {
+            margin: 5px;
+        }
+    </style>
+</head>
+ 
+<body>
+    <canvas id="canvas"></canvas>
+    <button id="start">Старт</button>
+    <button id="stop">Стоп</button>
+    <button id="clear">Очистить</button>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 1000; 
+        canvas.height = 800;
+ 
+        const cellSize = 0.3; // Размер одной клетки
+        const rows = Math.ceil(canvas.height / cellSize);
+        const cols = Math.ceil(canvas.width / cellSize);
+ 
+        let grid = createGrid();
+        let interval;
+ 
+        function createGrid() {
+            const grid = new Uint8Array(rows * cols);
+            for (let i = 0; i < grid.length; i++) {
+                grid[i] = Math.random() < 0.5 ? 0 : 1; // Случайное начальное состояние
+            }
+            return grid;
+        }
+ 
+        function draw() {
+            const imageData = ctx.createImageData(canvas.width, canvas.height);
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    const index = i * cols + j;
+                    const color = grid[index] === 1 ? 0 : 255; // Черный или белый
+                    const pixelIndex = (i * canvas.width + j) * 4;
+                    imageData.data[pixelIndex] = color;     // R
+                    imageData.data[pixelIndex + 1] = color; // G
+                    imageData.data[pixelIndex + 2] = color; // B
+                    imageData.data[pixelIndex + 3] = 255;   // A
+                }
+            }
+            ctx.putImageData(imageData, 0, 0);
+        }
+ 
+        function updateGrid() {
+            const newGrid = new Uint8Array(rows * cols);
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    const neighbors = countNeighbors(i, j);
+                    const index = i * cols + j;
+                    // Правила игры
+                    if (grid[index] === 1) {
+                        newGrid[index] = (neighbors === 2 || neighbors === 3) ? 1 : 0;
+                    } else {
+                        newGrid[index] = (neighbors === 3) ? 1 : 0;
+                    }
+                }
+            }
+            grid = newGrid;
+        }
+ 
+        function countNeighbors(row, col) {
+            let count = 0;
+            for (let i = -1; i <= 1; i++) {
+                for (let j = -1; j <= 1; j++) {
+                    if (i === 0 && j === 0) continue;
+                    const newRow = row + i;
+                    const newCol = col + j;
+                    if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols) {
+                        count += grid[newRow * cols + newCol];
+                    }
+                }
+            }
+            return count;
+        }
+ 
+        // Запуск игры
+        document.getElementById('start').onclick = () => {
+            if (!interval) {
+                const gameLoop = () => {
+                    updateGrid();
+                    draw();
+                    interval = requestAnimationFrame(gameLoop);
+                };
+                gameLoop();
+            }
+        };
+ 
+        // Остановка игры
+        document.getElementById('stop').onclick = () => {
+            cancelAnimationFrame(interval);
+            interval = null;
+        };
+ 
+        // Очистка экрана
+        document.getElementById('clear').onclick = () => {
+            grid = createGrid();
+            draw();
+        };
+ 
+        // Первоначальный рендеринг
+        draw();
+    </script>
+</body>
+ 
+</html>
+
